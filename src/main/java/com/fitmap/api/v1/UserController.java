@@ -41,13 +41,7 @@ public class UserController {
     @DeleteMapping("/me")
     public ResponseEntity<?> withdraw(Authentication auth) {
         Long userId = Long.parseLong(auth.getName());
-        User user = userRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException("User not found"));
-
-        user.setDeletedAt(java.time.LocalDateTime.now());
-        user.setEmail("withdrawn_" + userId + "@deleted");
-        userRepository.save(user);
-
+        userRepository.deleteById(userId);
         return ResponseEntity.ok(Map.of("message", "withdrawn"));
     }
 }
