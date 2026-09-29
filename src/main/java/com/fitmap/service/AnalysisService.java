@@ -34,7 +34,7 @@ public class AnalysisService {
 
         List<Facility> allNearby = facilityRepository.findAllNearby(lat, lng, radiusM);
         ScoreResult score = ScoreCalculator.calculate(allNearby, category);
-        String regionContext = regionContextService.buildContext(address, category);
+        String regionContext = regionContextService.buildContext(address, category, lat, lng, radiusM);
         String summaryJson = openAiReportService.generateReport(
             category, radiusM, score, allNearby,
             address, user.getBudgetRange(), regionContext
