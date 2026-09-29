@@ -12,6 +12,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -28,6 +29,24 @@ public class PaymentController {
     private final UserRepository userRepository;
 
     public record PurchaseRequest(int bundleType) {}
+
+    @GetMapping
+    public ResponseEntity<List<Map<String, Object>>> list(Authentication auth) {
+        Long userId = Long.parseLong(auth.getName());
+        List<Map<String, Object>> result = paymentRepository.findByUser_IdOrderByCreatedAtDesc(userId).stream()
+            .map(p -> {
+                Map<String, Object> m = new LinkedHashMap<>();
+                m.put("id", p.getId());
+                m.put("bundleType", p.getBundleType());
+                m.put("totalCredits", p.getTotalCredits());
+                m.put("amount", p.getAmount());
+                m.put("status", p.getStatus());
+                m.put("createdAt", p.getCreatedAt());
+                return m;
+            })
+            .toList();
+        return ResponseEntity.ok(result);
+    }
 
     @PostMapping
     public ResponseEntity<?> purchase(@RequestBody PurchaseRequest req, Authentication auth) {

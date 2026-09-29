@@ -41,6 +41,7 @@ public class SecurityConfig {
                 // 인증 불필요
                 .requestMatchers(
                     "/api/v1/facilities/**",
+                    "/api/v1/terms/**",
                     "/api/v1/auth/oauth2/**",   // 소셜 로그인 리다이렉트
                     "/api/v1/auth/refresh",      // 토큰 갱신
                     "/api/v1/auth/signup",       // 회원가입 완료
