@@ -140,7 +140,7 @@ public class AuthController {
         String refresh = jwt.provider().generateRefreshToken(uid);
         jwt.refresh().save(uid, refresh);
         jwt.cookie().write(response, refresh);
-        response.sendRedirect(frontendUrl + "/home?access_token=" + access);
+        response.sendRedirect(frontendUrl + "/auth/callback?access_token=" + access);
     }
 
     private void redirectToOnboarding(OahUserInfo info, HttpServletResponse response) throws IOException {
