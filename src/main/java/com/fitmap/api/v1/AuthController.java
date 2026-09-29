@@ -14,6 +14,7 @@ import com.fitmap.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -32,6 +33,9 @@ public class AuthController {
     private final OahSignup signup;
     private final UserRepository userRepository;
 
+    @Value("${app.frontend-url:http://localhost:3000}")
+    private String frontendUrl;
+
     @GetMapping("/oauth2/{provider}/authorize")
     public void authorize(@PathVariable String provider, HttpServletResponse response) throws IOException {
         OahAuthorizeParams params = oauth.state().issue(provider);
@@ -40,25 +44,29 @@ public class AuthController {
     }
 
     @GetMapping("/oauth2/{provider}/callback")
-    public ResponseEntity<?> callback(@PathVariable String provider,
-                                      @RequestParam String code,
-                                      @RequestParam String state,
-                                      HttpServletResponse response) {
+    public void callback(@PathVariable String provider,
+                         @RequestParam String code,
+                         @RequestParam String state,
+                         HttpServletResponse response) throws IOException {
         String codeVerifier = oauth.state().validateAndConsume(state, provider);
         if (codeVerifier == null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "invalid_state"));
+            response.sendRedirect(frontendUrl + "/login?error=invalid_state");
+            return;
         }
 
         OahUserInfo info = oauth.login().fetchUserInfo(provider, code, codeVerifier);
 
-        return userRepository
-                .findByProviderAndProviderId(info.provider(), info.providerId())
-                .<ResponseEntity<?>>map(user -> {
-                    user.setLastLoginAt(LocalDateTime.now());
-                    userRepository.save(user);
-                    return issueJwt(user, response);
-                })
-                .orElseGet(() -> issueSignupToken(info, response));
+        userRepository.findByProviderAndProviderId(info.provider(), info.providerId())
+                .ifPresentOrElse(
+                        user -> {
+                            user.setLastLoginAt(LocalDateTime.now());
+                            userRepository.save(user);
+                            try { redirectWithJwt(user, response); } catch (IOException e) { throw new RuntimeException(e); }
+                        },
+                        () -> {
+                            try { redirectToOnboarding(info, response); } catch (IOException e) { throw new RuntimeException(e); }
+                        }
+                );
     }
 
     @PostMapping("/signup")
@@ -123,6 +131,25 @@ public class AuthController {
         return ResponseEntity.ok().build();
     }
 
+    private void redirectWithJwt(User user, HttpServletResponse response) throws IOException {
+        String uid = user.getId().toString();
+        String access = jwt.provider().generateAccessToken(uid, user.getRole());
+        String refresh = jwt.provider().generateRefreshToken(uid);
+        jwt.refresh().save(uid, refresh);
+        jwt.cookie().write(response, refresh);
+        response.sendRedirect(frontendUrl + "/home?access_token=" + access);
+    }
+
+    private void redirectToOnboarding(OahUserInfo info, HttpServletResponse response) throws IOException {
+        String token = signup.provider()
+                .builder(info.provider(), info.providerId(), info.email())
+                .claim("nickname", info.nickname())
+                .build();
+        signup.service().save(info.provider(), info.providerId(), token);
+        signup.cookie().write(response, token);
+        response.sendRedirect(frontendUrl + "/onboarding");
+    }
+
     private ResponseEntity<?> issueJwt(User user, HttpServletResponse response) {
         String uid = user.getId().toString();
         String access = jwt.provider().generateAccessToken(uid, user.getRole());
@@ -131,16 +158,6 @@ public class AuthController {
         response.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + access);
         jwt.cookie().write(response, refresh);
         return ResponseEntity.ok(Map.of("registered", true));
-    }
-
-    private ResponseEntity<?> issueSignupToken(OahUserInfo info, HttpServletResponse response) {
-        String token = signup.provider()
-                .builder(info.provider(), info.providerId(), info.email())
-                .claim("nickname", info.nickname())
-                .build();
-        signup.service().save(info.provider(), info.providerId(), token);
-        signup.cookie().write(response, token);
-        return ResponseEntity.ok(Map.of("registered", false));
     }
 
     public record SignupRequest(String nickname) {}
