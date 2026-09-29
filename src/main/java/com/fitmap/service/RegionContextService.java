@@ -2,9 +2,11 @@ package com.fitmap.service;
 
 import com.fitmap.domain.region.RegionPopulation;
 import com.fitmap.domain.region.RegionRental;
+import com.fitmap.domain.region.RegionSingleHousehold;
 import com.fitmap.repository.FacilityRepository;
 import com.fitmap.repository.RegionPopulationRepository;
 import com.fitmap.repository.RegionRentalRepository;
+import com.fitmap.repository.RegionSingleHouseholdRepository;
 import com.fitmap.repository.SubwayStationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,6 +23,7 @@ public class RegionContextService {
     private final RegionPopulationRepository populationRepository;
     private final RegionRentalRepository rentalRepository;
     private final SubwayStationRepository subwayRepository;
+    private final RegionSingleHouseholdRepository singleHouseholdRepository;
 
     public String buildContext(String address, String category, double lat, double lng, int radiusM) {
         String sido    = extractPart(address, 0);
@@ -62,7 +65,26 @@ public class RegionContextService {
                 """.formatted(sido, r.getAvgRent1f(), r.getQuarter())));
         }
 
-        // 4. 반경 내 지하철역
+        // 4. 1인가구 현황
+        if (sido != null) {
+            singleHouseholdRepository.findBySido(sido).ifPresent(s -> {
+                double ratio2049 = s.getTotalSingleHh() > 0
+                    ? (double) s.getSingleHh2049() / s.getTotalSingleHh() * 100 : 0;
+                sb.append("""
+                    [1인가구 현황 - %s]
+                    - 총 1인가구 수: %,d세대
+                    - 20~49세 1인가구(핵심 피트니스 수요층): %,d세대 (전체 1인가구의 %.1f%%)
+                    - 연령별: 20대 %,d / 30대 %,d / 40대 %,d
+                    """.formatted(
+                    sido,
+                    s.getTotalSingleHh(),
+                    s.getSingleHh2049(), ratio2049,
+                    s.getSingleHh2029(), s.getSingleHh3039(), s.getSingleHh4049()
+                ));
+            });
+        }
+
+        // 5. 반경 내 지하철역
         List<Object[]> nearbySubway = subwayRepository.findNearby(lat, lng, radiusM);
         if (!nearbySubway.isEmpty()) {
             String stationList = nearbySubway.stream()
