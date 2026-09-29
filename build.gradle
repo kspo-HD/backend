@@ -36,6 +36,7 @@ dependencies {
     // Oah (social login: Kakao/Google OAuth2 + JWT + Redis refresh rotation)
     implementation 'com.github.cattomato-libs:Oah:2.1.0'
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
 
     // Alh (AOP 로깅: MDC traceId, 실행시간, 에러 알림)
     implementation 'com.github.cattomato-libs:Alh:1.0.0'

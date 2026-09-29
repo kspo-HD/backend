@@ -3,6 +3,7 @@ package com.fitmap.api.v1;
 import com.fitmap.domain.facility.Facility;
 import com.fitmap.repository.FacilityRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,6 +30,7 @@ public class FacilityController {
     }
 
     /** 지도용 경량 포인트 목록 — 히트맵·마커 */
+    @Cacheable(value = "map-points", key = "#sido + ':' + #category + ':' + #isPublic")
     @GetMapping("/map")
     public ResponseEntity<List<Map<String,Object>>> mapPoints(
         @RequestParam(required = false) String sido,
@@ -49,6 +51,7 @@ public class FacilityController {
     }
 
     /** 전체 시설 통계 — 대시보드용 */
+    @Cacheable("facility-stats")
     @GetMapping("/stats")
     public ResponseEntity<?> stats() {
         List<Object[]> categoryRows = facilityRepository.countByCategory();
