@@ -1,0 +1,83 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:fitmap}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASS:}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.spatial.dialect.postgis.PostgisPG10Dialect
+        format_sql: true
+    show-sql: false
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+server:
+  port: 8080
+
+oauth:
+  kakao:
+    client-id: ${KAKAO_CLIENT_ID:}
+    client-secret: ${KAKAO_CLIENT_SECRET:}
+    redirect-uri: ${KAKAO_REDIRECT_URI:http://localhost:8080/api/v1/auth/oauth2/kakao/callback}
+  google:
+    client-id: ${GOOGLE_CLIENT_ID:}
+    client-secret: ${GOOGLE_CLIENT_SECRET:}
+    redirect-uri: ${GOOGLE_REDIRECT_URI:http://localhost:8080/api/v1/auth/oauth2/google/callback}
+
+jwt:
+  secret-key: ${JWT_SECRET:fitmap-dev-secret-must-be-at-least-32-chars-long}
+  access-token-expiration: 1800000
+  refresh-token-expiration: 1209600000
+  refresh-cookie:
+    secure: false
+    same-site: Lax
+
+signup-token:
+  secret-key: ${SIGNUP_TOKEN_SECRET:fitmap-signup-secret-must-be-at-least-32-chars}
+  cookie:
+    secure: false
+
+openai:
+  api-key: ${OPENAI_API_KEY:}
+  model: ${OPENAI_MODEL:gpt-4o}
+
+kakao:
+  rest-api-key: ${KAKAO_REST_API_KEY:}
+
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}
+
+alh:
+  mdc:
+    enabled: true
+    request-id-length: 8
+    header-name: X-Request-Id
+    response-header: true
+  logging:
+    enabled: true
+    pointcut: "execution(* com.fitmap.api..*.*(..))||execution(* com.fitmap.service..*.*(..))"
+    log-args: true
+    log-result: false
+    slow-threshold-ms: 3000
+    mask-pii: true
+    mask-keywords: [token, authorization, apiKey, secret, password]
+  alert:
+    enabled: false   # 운영 환경에서 SLACK_WEBHOOK_URL 설정 후 true로 변경
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+  default-produces-media-type: application/json
+
+logging:
+  level:
+    com.fitmap: DEBUG
