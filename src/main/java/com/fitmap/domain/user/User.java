@@ -52,6 +52,15 @@ public class User {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    @Column(name = "interest_category")
+    private String interestCategory;
+
+    @Column(name = "interest_sido")
+    private String interestSido;
+
+    @Column(name = "budget_range")
+    private String budgetRange;
+
     @PrePersist
     void prePersist() { this.createdAt = LocalDateTime.now(); }
 }

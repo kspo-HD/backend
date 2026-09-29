@@ -37,10 +37,10 @@ public class Facility {
     @Column(name = "road_addr")
     private String roadAddr;
 
-    private Short floor;
+    private Integer floor;
 
     @Column(name = "area_m2")
-    private Integer areaM2;
+    private Long areaM2;
 
     @Column(name = "is_public")
     private Boolean isPublic;

@@ -88,6 +88,9 @@ public class AuthController {
                 .providerId(p.providerId())
                 .email(p.email())
                 .name(req.nickname() != null ? req.nickname() : p.extra("nickname"))
+                .interestCategory(req.interestCategory())
+                .interestSido(req.interestSido())
+                .budgetRange(req.budgetRange())
                 .termsAgreedAt(LocalDateTime.now())
                 .privacyAgreedAt(LocalDateTime.now())
                 .lastLoginAt(LocalDateTime.now())
@@ -160,5 +163,5 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("registered", true));
     }
 
-    public record SignupRequest(String nickname) {}
+    public record SignupRequest(String nickname, String interestCategory, String interestSido, String budgetRange) {}
 }
