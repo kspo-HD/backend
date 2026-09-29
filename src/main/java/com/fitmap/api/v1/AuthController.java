@@ -80,7 +80,6 @@ public class AuthController {
                 .providerId(p.providerId())
                 .email(p.email())
                 .name(req.nickname() != null ? req.nickname() : p.extra("nickname"))
-                .profileImageUrl(p.extra("profileImage"))
                 .termsAgreedAt(LocalDateTime.now())
                 .privacyAgreedAt(LocalDateTime.now())
                 .lastLoginAt(LocalDateTime.now())
@@ -138,7 +137,6 @@ public class AuthController {
         String token = signup.provider()
                 .builder(info.provider(), info.providerId(), info.email())
                 .claim("nickname", info.nickname())
-                .claim("profileImage", info.profileImage())
                 .build();
         signup.service().save(info.provider(), info.providerId(), token);
         signup.cookie().write(response, token);
