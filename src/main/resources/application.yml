@@ -42,6 +42,7 @@ signup-token:
   secret-key: ${SIGNUP_TOKEN_SECRET:fitmap-signup-secret-must-be-at-least-32-chars}
   cookie:
     secure: false
+    same-site: Lax
 
 openai:
   api-key: ${OPENAI_API_KEY:}

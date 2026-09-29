@@ -1,13 +1,14 @@
 package com.fitmap.api.v1;
 
-import com.cattomatolibs.oah.core.OahJwt;
-import com.cattomatolibs.oah.core.OahOAuth;
-import com.cattomatolibs.oah.core.OahSignup;
-import com.cattomatolibs.oah.core.model.OahAuthorizeParams;
-import com.cattomatolibs.oah.core.model.OahJwtPayload;
-import com.cattomatolibs.oah.core.model.OahUserInfo;
-import com.cattomatolibs.oah.core.exception.OahJwtException;
-import com.cattomatolibs.oah.core.exception.OahJwtErrorCode;
+import com.github.catomat0.oauthhelper.jwt.OahJwt;
+import com.github.catomat0.oauthhelper.oauth.OahOAuth;
+import com.github.catomat0.oauthhelper.signuptoken.OahSignup;
+import com.github.catomat0.oauthhelper.signuptoken.OahSignupTokenPayload;
+import com.github.catomat0.oauthhelper.oauth.OahAuthorizeParams;
+import com.github.catomat0.oauthhelper.jwt.OahJwtPayload;
+import com.github.catomat0.oauthhelper.oauth.OahUserInfo;
+import com.github.catomat0.oauthhelper.jwt.OahJwtException;
+import com.github.catomat0.oauthhelper.jwt.OahJwtErrorCode;
 import com.fitmap.domain.user.User;
 import com.fitmap.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
@@ -69,19 +70,17 @@ public class AuthController {
             return ResponseEntity.badRequest().body(Map.of("error", "invalid_signup_token"));
         }
 
-        OahJwtPayload p = signup.provider().parse(token);
-        if (!signup.service().validateAndConsume(p.userId(), token)) {
+        OahSignupTokenPayload p = signup.provider().parse(token);
+        if (!signup.service().validateAndConsume(p.provider(), p.providerId(), token)) {
             return ResponseEntity.badRequest().body(Map.of("error", "signup_token_expired"));
         }
 
-        // userId in signup token is "provider:providerId"
-        String[] parts = p.userId().split(":", 2);
         User user = User.builder()
-                .provider(parts[0])
-                .providerId(parts[1])
-                .email(p.claims().get("email", String.class))
-                .name(req.nickname() != null ? req.nickname() : p.claims().get("nickname", String.class))
-                .profileImageUrl(p.claims().get("profileImage", String.class))
+                .provider(p.provider())
+                .providerId(p.providerId())
+                .email(p.email())
+                .name(req.nickname() != null ? req.nickname() : p.extra("nickname"))
+                .profileImageUrl(p.extra("profileImage"))
                 .termsAgreedAt(LocalDateTime.now())
                 .privacyAgreedAt(LocalDateTime.now())
                 .lastLoginAt(LocalDateTime.now())
@@ -96,7 +95,7 @@ public class AuthController {
     public ResponseEntity<?> refresh(HttpServletRequest request, HttpServletResponse response) {
         String oldRefresh = jwt.cookie().read(request);
         if (!jwt.provider().validateRefresh(oldRefresh)) {
-            throw new OahJwtException(OahJwtErrorCode.TOKEN_TYPE_MISMATCH);
+            throw new OahJwtException(OahJwtErrorCode.TOKEN_TYPE_MISMATCH, "token type mismatch");
         }
 
         OahJwtPayload p = jwt.provider().parseRefresh(oldRefresh);

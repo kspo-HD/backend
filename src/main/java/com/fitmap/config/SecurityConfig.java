@@ -1,6 +1,6 @@
 package com.fitmap.config;
 
-import com.cattomatolibs.oah.core.filter.OahJwtAuthenticationFilter;
+import com.github.catomat0.oauthhelper.jwt.OahJwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
