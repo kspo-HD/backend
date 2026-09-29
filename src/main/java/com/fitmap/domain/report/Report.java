@@ -3,6 +3,8 @@ package com.fitmap.domain.report;
 import com.fitmap.domain.analysis.Analysis;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -32,6 +34,7 @@ public class Report {
     @Column(name = "public_ratio")
     private BigDecimal publicRatio;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "summary_json", columnDefinition = "jsonb")
     private String summaryJson;
 

@@ -25,6 +25,7 @@ public class AnalysisService {
     private final ReportCompetitorRepository reportCompetitorRepository;
     private final UserRepository userRepository;
     private final OpenAiReportService openAiReportService;
+    private final RegionContextService regionContextService;
 
     @Transactional
     public Report createAnalysis(String userId, String category, double lat, double lng, int radiusM, String address) {
@@ -33,7 +34,11 @@ public class AnalysisService {
 
         List<Facility> allNearby = facilityRepository.findAllNearby(lat, lng, radiusM);
         ScoreResult score = ScoreCalculator.calculate(allNearby, category);
-        String summaryJson = openAiReportService.generateReport(category, radiusM, score, allNearby);
+        String regionContext = regionContextService.buildContext(address, category);
+        String summaryJson = openAiReportService.generateReport(
+            category, radiusM, score, allNearby,
+            address, user.getBudgetRange(), regionContext
+        );
 
         Analysis analysis = Analysis.builder()
             .user(user).category(category).lat(lat).lng(lng).radiusM(radiusM).address(address)

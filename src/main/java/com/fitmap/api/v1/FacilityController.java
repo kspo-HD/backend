@@ -28,12 +28,34 @@ public class FacilityController {
         return ResponseEntity.ok(facilityRepository.findNearby(lat, lng, radius, category));
     }
 
+    /** 지도용 경량 포인트 목록 — 히트맵·마커 */
+    @GetMapping("/map")
+    public ResponseEntity<List<Map<String,Object>>> mapPoints(
+        @RequestParam(required = false) String sido,
+        @RequestParam(required = false) String category,
+        @RequestParam(required = false) String isPublic
+    ) {
+        List<Object[]> rows = facilityRepository.findForMap(sido, category, isPublic);
+        List<Map<String,Object>> result = rows.stream().map(r -> {
+            Map<String,Object> m = new LinkedHashMap<>();
+            m.put("lat", r[0]);
+            m.put("lng", r[1]);
+            m.put("name", r[2]);
+            m.put("category", r[3]);
+            m.put("isPublic", r[4]);
+            return m;
+        }).toList();
+        return ResponseEntity.ok(result);
+    }
+
     /** 전체 시설 통계 — 대시보드용 */
     @GetMapping("/stats")
     public ResponseEntity<?> stats() {
         List<Object[]> categoryRows = facilityRepository.countByCategory();
         List<Object[]> regionRows = facilityRepository.countBySido();
+        List<Object[]> typeRows = facilityRepository.countByType();
         long total = facilityRepository.count();
+        long active = facilityRepository.countActive();
 
         List<Map<String,Object>> categories = categoryRows.stream()
             .map(r -> Map.<String,Object>of("category", r[0], "count", r[1]))
@@ -41,12 +63,17 @@ public class FacilityController {
         List<Map<String,Object>> regions = regionRows.stream()
             .map(r -> Map.<String,Object>of("sido", r[0], "count", r[1]))
             .toList();
+        List<Map<String,Object>> types = typeRows.stream()
+            .map(r -> Map.<String,Object>of("type", r[0], "count", r[1]))
+            .toList();
 
-        return ResponseEntity.ok(Map.of(
-            "total", total,
-            "categories", categories,
-            "regions", regions
-        ));
+        Map<String,Object> result = new LinkedHashMap<>();
+        result.put("total", total);
+        result.put("active", active);
+        result.put("categories", categories);
+        result.put("regions", regions);
+        result.put("types", types);
+        return ResponseEntity.ok(result);
     }
 
     /** 시설 상세 */

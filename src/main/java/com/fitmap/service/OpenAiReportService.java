@@ -27,8 +27,9 @@ public class OpenAiReportService {
 
     private final RestClient restClient = RestClient.create();
 
-    public String generateReport(String category, int radiusM, ScoreResult score, List<Facility> allNearby) {
-        String prompt = buildPrompt(category, radiusM, score, allNearby);
+    public String generateReport(String category, int radiusM, ScoreResult score, List<Facility> allNearby,
+                                  String address, String budgetRange, String regionContext) {
+        String prompt = buildPrompt(category, radiusM, score, allNearby, address, budgetRange, regionContext);
 
         Map<String, Object> requestBody = Map.of(
             "model", model,
@@ -69,7 +70,8 @@ public class OpenAiReportService {
             """;
     }
 
-    private String buildPrompt(String category, int radiusM, ScoreResult score, List<Facility> allNearby) {
+    private String buildPrompt(String category, int radiusM, ScoreResult score, List<Facility> allNearby,
+                               String address, String budgetRange, String regionContext) {
         List<Facility> topCompetitors = allNearby.stream()
             .filter(f -> category.equals(f.getCategory()) && "정상운영".equals(f.getStatus()))
             .limit(5)
@@ -92,45 +94,62 @@ public class OpenAiReportService {
             .collect(Collectors.joining("\n"));
         if (closedList.isBlank()) closedList = "- 없음";
 
+        String budgetContext = (budgetRange != null && !budgetRange.isBlank())
+            ? "희망 창업 예산: " + budgetRange
+            : "희망 창업 예산: 미지정";
+
+        String regionCtx = (regionContext != null && !regionContext.isBlank())
+            ? regionContext
+            : "";
+
         return """
-            [창업 입지 분석 요청]
+            [창업자 정보]
+            창업 예정 지역: %s
+            %s
             창업 예정 업종: %s
             분석 반경: %dm
 
-            [입지 점수 결과]
+            [입지 점수]
             총점: %d점 / %c등급
-            - 경쟁 강도 점수: %d/30점 (동일 업종 운영 시설 %d개)
-            - 시장 생존율 점수: %d/25점 (폐업률 %.1f%%)
-            - 공공시설 압박 점수: %d/20점 (무료·공공 시설 %d개)
-            - 상권 활성도 점수: %d/15점 (전체 운영 시설 %d개)
-            - 수요 신호 점수: %d/10점
+            - 경쟁 강도: %d/30점 (동일 업종 운영 시설 %d개)
+            - 시장 생존율: %d/25점 (폐업률 %.1f%%, 폐업 시설 %d개)
+            - 공공시설 압박: %d/20점 (무료·공공 시설 %d개)
+            - 상권 활성도: %d/15점 (전체 운영 시설 %d개)
+            - 수요 신호: %d/10점
 
+            %s
             [반경 내 주요 경쟁사 (거리순 상위 5개)]
             %s
 
             [최근 폐업한 동일 업종 시설]
             %s
 
-            위 데이터를 바탕으로 아래 JSON 형식으로 분석 결과를 작성하세요:
+            위 데이터를 근거로 창업자에게 실질적인 입지 분석 보고서를 JSON으로 작성하세요.
+            예산 범위를 고려해 초기 투자 전략과 손익분기점 관련 인사이트를 포함하세요.
             {
-              "summary": "2-3문장. 이 입지의 핵심 특징과 창업 가능성 요약",
-              "market_analysis": "3-4문장. 시장 규모, 수요 현황, 상권 특성 분석. 구체적 수치 포함",
-              "competition_analysis": "3-4문장. 경쟁 강도, 주요 경쟁사 특징, 차별화 포인트 분석",
-              "risks": ["위험 요인 1 (구체적, 수치 포함)", "위험 요인 2", "위험 요인 3"],
+              "summary": "2-3문장. 이 입지의 핵심 특징과 창업 가능성 요약 (지역명, 점수, 등급 언급)",
+              "market_analysis": "3-4문장. 시장 규모, 수요 현황, 상권 특성 분석. 구체적 수치 필수 포함",
+              "competition_analysis": "3-4문장. 경쟁 강도, 주요 경쟁사 특징, 차별화 전략 방향",
+              "budget_analysis": "2-3문장. %s 예산 기준 예상 초기 투자 구성(임대보증금·인테리어·기기), 손익분기점 추정",
+              "risks": ["위험 요인 1 (수치 포함)", "위험 요인 2", "위험 요인 3"],
               "opportunities": ["기회 요인 1 (구체적)", "기회 요인 2", "기회 요인 3"],
-              "recommendations": ["실행 전략 1 (구체적, 실행 가능한)", "전략 2", "전략 3"],
-              "score_reasoning": "2문장. 해당 점수(%d점)를 받은 핵심 이유와 개선 포인트"
+              "recommendations": ["실행 전략 1 (구체적·실행 가능)", "전략 2", "전략 3"],
+              "score_reasoning": "2문장. %d점을 받은 핵심 이유와 개선 포인트"
             }
             """.formatted(
+            address != null ? address : "미지정",
+            budgetContext,
             category, radiusM,
             score.total(), score.grade(),
             score.competitionScore(), score.competitorCount(),
-            score.viabilityScore(), score.closureRate() * 100,
+            score.viabilityScore(), score.closureRate() * 100, score.closedCount(),
             score.publicPressureScore(), score.publicCount(),
             score.areaVitalityScore(), score.allActiveCount(),
             score.demandScore(),
+            regionCtx,
             competitorList,
             closedList,
+            budgetRange != null ? budgetRange : "미지정",
             score.total()
         );
     }
