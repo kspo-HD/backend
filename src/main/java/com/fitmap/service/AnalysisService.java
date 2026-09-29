@@ -27,7 +27,7 @@ public class AnalysisService {
     private final OpenAiReportService openAiReportService;
 
     @Transactional
-    public Report createAnalysis(String userId, String category, double lat, double lng, int radiusM) {
+    public Report createAnalysis(String userId, String category, double lat, double lng, int radiusM, String address) {
         User user = userRepository.findById(Long.parseLong(userId))
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
@@ -36,7 +36,7 @@ public class AnalysisService {
         String summaryJson = openAiReportService.generateReport(category, radiusM, score, allNearby);
 
         Analysis analysis = Analysis.builder()
-            .user(user).category(category).lat(lat).lng(lng).radiusM(radiusM)
+            .user(user).category(category).lat(lat).lng(lng).radiusM(radiusM).address(address)
             .build();
         analysisRepository.save(analysis);
 

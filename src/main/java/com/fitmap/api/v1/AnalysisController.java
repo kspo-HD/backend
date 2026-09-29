@@ -32,7 +32,8 @@ public class AnalysisController {
         @NotBlank String category,
         @DecimalMin("-90") @DecimalMax("90") double lat,
         @DecimalMin("-180") @DecimalMax("180") double lng,
-        @Min(300) @Max(5000) int radiusM
+        @Min(300) @Max(5000) int radiusM,
+        String address
     ) {}
 
     public record AnalysisResponse(UUID id, String category, Double lat, Double lng, Integer radiusM, LocalDateTime createdAt) {
@@ -44,7 +45,7 @@ public class AnalysisController {
     @PostMapping
     public ResponseEntity<?> create(@Valid @RequestBody CreateAnalysisRequest req, Authentication auth) {
         Report report = analysisService.createAnalysis(
-            auth.getName(), req.category(), req.lat(), req.lng(), req.radiusM()
+            auth.getName(), req.category(), req.lat(), req.lng(), req.radiusM(), req.address()
         );
         return ResponseEntity.ok(Map.of(
             "reportId", report.getId(),

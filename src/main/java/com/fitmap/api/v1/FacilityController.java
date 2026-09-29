@@ -6,7 +6,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/facilities")
@@ -24,6 +26,27 @@ public class FacilityController {
         @RequestParam(required = false) String category
     ) {
         return ResponseEntity.ok(facilityRepository.findNearby(lat, lng, radius, category));
+    }
+
+    /** 전체 시설 통계 — 대시보드용 */
+    @GetMapping("/stats")
+    public ResponseEntity<?> stats() {
+        List<Object[]> categoryRows = facilityRepository.countByCategory();
+        List<Object[]> regionRows = facilityRepository.countBySido();
+        long total = facilityRepository.count();
+
+        List<Map<String,Object>> categories = categoryRows.stream()
+            .map(r -> Map.<String,Object>of("category", r[0], "count", r[1]))
+            .toList();
+        List<Map<String,Object>> regions = regionRows.stream()
+            .map(r -> Map.<String,Object>of("sido", r[0], "count", r[1]))
+            .toList();
+
+        return ResponseEntity.ok(Map.of(
+            "total", total,
+            "categories", categories,
+            "regions", regions
+        ));
     }
 
     /** 시설 상세 */
