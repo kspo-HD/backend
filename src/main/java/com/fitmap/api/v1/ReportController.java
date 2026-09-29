@@ -30,14 +30,18 @@ public class ReportController {
     public ResponseEntity<List<Map<String, Object>>> list(Authentication auth) {
         Long userId = Long.parseLong(auth.getName());
         List<Map<String, Object>> result = reportRepository.findByUserId(userId).stream()
-            .map(r -> Map.<String, Object>of(
-                "id", r.getId(),
-                "category", r.getAnalysis().getCategory(),
-                "score", r.getScore(),
-                "grade", String.valueOf(r.getGrade()),
-                "isPaid", r.getIsPaid(),
-                "createdAt", r.getCreatedAt()
-            ))
+            .map(r -> {
+                Map<String, Object> m = new LinkedHashMap<>();
+                m.put("id", r.getId());
+                m.put("analysisId", r.getAnalysis().getId());
+                m.put("category", r.getAnalysis().getCategory());
+                m.put("address", r.getAnalysis().getAddress());
+                m.put("score", r.getScore());
+                m.put("grade", String.valueOf(r.getGrade()));
+                m.put("isPaid", r.getIsPaid());
+                m.put("createdAt", r.getCreatedAt());
+                return m;
+            })
             .toList();
         return ResponseEntity.ok(result);
     }
