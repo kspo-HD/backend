@@ -28,16 +28,18 @@ public class AnalysisService {
     private final RegionContextService regionContextService;
 
     @Transactional
-    public Report createAnalysis(String userId, String category, double lat, double lng, int radiusM, String address) {
+    public Report createAnalysis(String userId, String category, double lat, double lng, int radiusM, String address, String budgetRange) {
         User user = userRepository.findById(Long.parseLong(userId))
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         List<Facility> allNearby = facilityRepository.findAllNearby(lat, lng, radiusM);
         ScoreResult score = ScoreCalculator.calculate(allNearby, category);
         String regionContext = regionContextService.buildContext(address, category, lat, lng, radiusM);
+        String effectiveBudget = (budgetRange != null && !budgetRange.isBlank())
+            ? budgetRange : user.getBudgetRange();
         String summaryJson = openAiReportService.generateReport(
             category, radiusM, score, allNearby,
-            address, user.getBudgetRange(), regionContext
+            address, effectiveBudget, regionContext
         );
 
         Analysis analysis = Analysis.builder()
