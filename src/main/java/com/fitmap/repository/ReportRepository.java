@@ -2,6 +2,7 @@ package com.fitmap.repository;
 
 import com.fitmap.domain.report.Report;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -17,5 +18,7 @@ public interface ReportRepository extends JpaRepository<Report, UUID> {
     @Query("SELECT r FROM Report r JOIN r.analysis a WHERE r.id = :reportId AND a.user.id = :userId")
     Optional<Report> findByIdAndUserId(@Param("reportId") UUID reportId, @Param("userId") Long userId);
 
-    void deleteByAnalysis_IdIn(List<UUID> analysisIds);
+    @Modifying
+    @Query("DELETE FROM Report r WHERE r.analysis.id IN :analysisIds")
+    void deleteByAnalysis_IdIn(@Param("analysisIds") List<UUID> analysisIds);
 }
