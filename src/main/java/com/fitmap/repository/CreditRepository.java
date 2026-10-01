@@ -12,6 +12,8 @@ public interface CreditRepository extends JpaRepository<Credit, UUID> {
 
     long countByUser_IdAndUsedAtIsNull(Long userId);
 
+    void deleteByUser_Id(Long userId);
+
     @Query("""
         SELECT c FROM Credit c
         WHERE c.user.id = :userId AND c.usedAt IS NULL

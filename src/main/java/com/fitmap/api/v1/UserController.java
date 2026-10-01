@@ -3,6 +3,7 @@ package com.fitmap.api.v1;
 import com.fitmap.domain.user.User;
 import com.fitmap.repository.CreditRepository;
 import com.fitmap.repository.UserRepository;
+import com.fitmap.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -17,6 +18,7 @@ public class UserController {
 
     private final UserRepository userRepository;
     private final CreditRepository creditRepository;
+    private final UserService userService;
 
     @GetMapping("/me")
     public ResponseEntity<?> me(Authentication auth) {
@@ -41,7 +43,7 @@ public class UserController {
     @DeleteMapping("/me")
     public ResponseEntity<?> withdraw(Authentication auth) {
         Long userId = Long.parseLong(auth.getName());
-        userRepository.deleteById(userId);
+        userService.withdraw(userId);
         return ResponseEntity.ok(Map.of("message", "withdrawn"));
     }
 }

@@ -8,4 +8,6 @@ import java.util.UUID;
 
 public interface ReportCompetitorRepository extends JpaRepository<ReportCompetitor, Long> {
     List<ReportCompetitor> findByReport_IdOrderByDistanceMAsc(UUID reportId);
+
+    void deleteByReport_IdIn(List<UUID> reportIds);
 }
