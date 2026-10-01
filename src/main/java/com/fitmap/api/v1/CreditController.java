@@ -1,6 +1,7 @@
 package com.fitmap.api.v1;
 
-import com.fitmap.repository.CreditRepository;
+import com.fitmap.common.ApiResponse;
+import com.fitmap.service.CreditService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -15,12 +16,12 @@ import java.util.Map;
 @RequestMapping("/api/v1/credits")
 public class CreditController {
 
-    private final CreditRepository creditRepository;
+    private final CreditService creditService;
 
     @GetMapping("/remaining")
-    public ResponseEntity<?> remaining(Authentication auth) {
+    public ResponseEntity<ApiResponse<Map<String, Long>>> remaining(Authentication auth) {
         Long userId = Long.parseLong(auth.getName());
-        long count = creditRepository.countByUser_IdAndUsedAtIsNull(userId);
-        return ResponseEntity.ok(Map.of("count", count));
+        long count = creditService.getRemainingCount(userId);
+        return ResponseEntity.ok(ApiResponse.ok(Map.of("count", count)));
     }
 }

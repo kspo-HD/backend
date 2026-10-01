@@ -2,6 +2,7 @@ package com.fitmap.service;
 
 import com.fitmap.domain.analysis.Analysis;
 import com.fitmap.domain.report.Report;
+import com.fitmap.domain.user.User;
 import com.fitmap.repository.*;
 import com.github.catomat0.oauthhelper.jwt.OahRefreshTokenService;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -23,6 +25,22 @@ public class UserService {
     private final PaymentRepository paymentRepository;
     private final UserTermsAgreementRepository userTermsAgreementRepository;
     private final OahRefreshTokenService refreshTokenService;
+
+    public Map<String, Object> getMe(Long userId) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        long remainingCredits = creditRepository.countByUser_IdAndUsedAtIsNull(userId);
+        return Map.of(
+            "id", user.getId(),
+            "email", user.getEmail() != null ? user.getEmail() : "",
+            "name", user.getName() != null ? user.getName() : "",
+            "profileImageUrl", user.getProfileImageUrl() != null ? user.getProfileImageUrl() : "",
+            "provider", user.getProvider(),
+            "role", user.getRole(),
+            "remainingCredits", remainingCredits,
+            "createdAt", user.getCreatedAt()
+        );
+    }
 
     @Transactional
     public void withdraw(Long userId) {

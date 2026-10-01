@@ -1,5 +1,6 @@
 package com.fitmap.service;
 
+import com.fitmap.domain.facility.Facility;
 import com.fitmap.repository.FacilityRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Service;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +30,14 @@ public class FacilityService {
                 return m;
             })
             .toList();
+    }
+
+    public List<Facility> getNearby(double lat, double lng, int radius, String category) {
+        return facilityRepository.findNearby(lat, lng, radius, category);
+    }
+
+    public Optional<Facility> getById(Long id) {
+        return facilityRepository.findById(id);
     }
 
     @Cacheable("facility-stats")

@@ -1,17 +1,13 @@
 package com.fitmap.api.v1;
 
-import com.fitmap.domain.facility.Facility;
+import com.fitmap.common.ApiResponse;
 import com.fitmap.domain.report.Report;
-import com.fitmap.domain.report.ReportCompetitor;
-import com.fitmap.repository.CreditRepository;
-import com.fitmap.repository.ReportCompetitorRepository;
-import com.fitmap.repository.ReportRepository;
+import com.fitmap.service.ReportService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,35 +18,18 @@ import java.util.UUID;
 @RequestMapping("/api/v1/reports")
 public class ReportController {
 
-    private final ReportRepository reportRepository;
-    private final ReportCompetitorRepository reportCompetitorRepository;
-    private final CreditRepository creditRepository;
+    private final ReportService reportService;
 
     @GetMapping
-    public ResponseEntity<List<Map<String, Object>>> list(Authentication auth) {
+    public ResponseEntity<ApiResponse<List<Map<String, Object>>>> list(Authentication auth) {
         Long userId = Long.parseLong(auth.getName());
-        List<Map<String, Object>> result = reportRepository.findByUserId(userId).stream()
-            .map(r -> {
-                Map<String, Object> m = new LinkedHashMap<>();
-                m.put("id", r.getId());
-                m.put("analysisId", r.getAnalysis().getId());
-                m.put("category", r.getAnalysis().getCategory());
-                m.put("address", r.getAnalysis().getAddress());
-                m.put("score", r.getScore());
-                m.put("grade", String.valueOf(r.getGrade()));
-                m.put("isPaid", r.getIsPaid());
-                m.put("createdAt", r.getCreatedAt());
-                return m;
-            })
-            .toList();
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(ApiResponse.ok(reportService.list(userId)));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> get(@PathVariable UUID id, Authentication auth) {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> get(@PathVariable UUID id, Authentication auth) {
         Long userId = Long.parseLong(auth.getName());
-        Report report = reportRepository.findByIdAndUserId(id, userId)
-            .orElseThrow(() -> new IllegalArgumentException("Report not found"));
+        Report report = reportService.get(id, userId);
 
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("id", report.getId());
@@ -74,63 +53,18 @@ public class ReportController {
             body.put("locked", true);
         }
 
-        return ResponseEntity.ok(body);
+        return ResponseEntity.ok(ApiResponse.ok(body));
     }
 
     @GetMapping("/{id}/competitors")
-    public ResponseEntity<?> competitors(@PathVariable UUID id, Authentication auth) {
+    public ResponseEntity<ApiResponse<List<Map<String, Object>>>> competitors(@PathVariable UUID id, Authentication auth) {
         Long userId = Long.parseLong(auth.getName());
-        reportRepository.findByIdAndUserId(id, userId)
-            .orElseThrow(() -> new IllegalArgumentException("Report not found"));
-
-        List<Map<String, Object>> result = reportCompetitorRepository
-            .findByReport_IdOrderByDistanceMAsc(id).stream()
-            .map(c -> {
-                Facility f = c.getFacility();
-                Map<String, Object> m = new LinkedHashMap<>();
-                m.put("facilityId", f.getId());
-                m.put("name", f.getName());
-                m.put("category", f.getCategory());
-                m.put("status", f.getStatus());
-                m.put("lat", f.getLat());
-                m.put("lng", f.getLng());
-                m.put("roadAddr", f.getRoadAddr());
-                m.put("areaM2", f.getAreaM2());
-                m.put("floor", f.getFloor());
-                m.put("isPublic", f.getIsPublic());
-                m.put("isFree", f.getIsFree());
-                m.put("openWeekday", f.getOpenWeekday());
-                m.put("distanceM", c.getDistanceM());
-                return m;
-            })
-            .toList();
-
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(ApiResponse.ok(reportService.getCompetitors(id, userId)));
     }
 
     @PostMapping("/{id}/unlock")
-    public ResponseEntity<?> unlock(@PathVariable UUID id, Authentication auth) {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> unlock(@PathVariable UUID id, Authentication auth) {
         Long userId = Long.parseLong(auth.getName());
-        Report report = reportRepository.findByIdAndUserId(id, userId)
-            .orElseThrow(() -> new IllegalArgumentException("Report not found"));
-
-        if (Boolean.TRUE.equals(report.getIsPaid())) {
-            return ResponseEntity.ok(Map.of("message", "already_unlocked", "summaryJson", report.getSummaryJson()));
-        }
-
-        var credit = creditRepository.findOldestUnused(userId)
-            .orElseThrow(() -> new IllegalStateException("크레딧이 부족합니다"));
-
-        credit.setReport(report);
-        credit.setUsedAt(LocalDateTime.now());
-        creditRepository.save(credit);
-
-        report.setIsPaid(true);
-        reportRepository.save(report);
-
-        return ResponseEntity.ok(Map.of(
-            "message", "unlocked",
-            "summaryJson", report.getSummaryJson()
-        ));
+        return ResponseEntity.ok(ApiResponse.ok(reportService.unlock(id, userId)));
     }
 }

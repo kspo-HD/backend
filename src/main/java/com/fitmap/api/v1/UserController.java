@@ -1,8 +1,6 @@
 package com.fitmap.api.v1;
 
-import com.fitmap.domain.user.User;
-import com.fitmap.repository.CreditRepository;
-import com.fitmap.repository.UserRepository;
+import com.fitmap.common.ApiResponse;
 import com.fitmap.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,34 +14,18 @@ import java.util.Map;
 @RequestMapping("/api/v1/users")
 public class UserController {
 
-    private final UserRepository userRepository;
-    private final CreditRepository creditRepository;
     private final UserService userService;
 
     @GetMapping("/me")
-    public ResponseEntity<?> me(Authentication auth) {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> me(Authentication auth) {
         Long userId = Long.parseLong(auth.getName());
-        User user = userRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException("User not found"));
-
-        long remainingCredits = creditRepository.countByUser_IdAndUsedAtIsNull(userId);
-
-        return ResponseEntity.ok(Map.of(
-            "id", user.getId(),
-            "email", user.getEmail() != null ? user.getEmail() : "",
-            "name", user.getName() != null ? user.getName() : "",
-            "profileImageUrl", user.getProfileImageUrl() != null ? user.getProfileImageUrl() : "",
-            "provider", user.getProvider(),
-            "role", user.getRole(),
-            "remainingCredits", remainingCredits,
-            "createdAt", user.getCreatedAt()
-        ));
+        return ResponseEntity.ok(ApiResponse.ok(userService.getMe(userId)));
     }
 
     @DeleteMapping("/me")
-    public ResponseEntity<?> withdraw(Authentication auth) {
+    public ResponseEntity<ApiResponse<Map<String, String>>> withdraw(Authentication auth) {
         Long userId = Long.parseLong(auth.getName());
         userService.withdraw(userId);
-        return ResponseEntity.ok(Map.of("message", "withdrawn"));
+        return ResponseEntity.ok(ApiResponse.ok(Map.of("message", "withdrawn")));
     }
 }

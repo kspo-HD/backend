@@ -1,8 +1,8 @@
 package com.fitmap.api.v1;
 
+import com.fitmap.common.ApiResponse;
 import com.fitmap.domain.analysis.Analysis;
 import com.fitmap.domain.report.Report;
-import com.fitmap.repository.AnalysisRepository;
 import com.fitmap.service.AnalysisService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
@@ -26,7 +26,6 @@ import java.util.UUID;
 public class AnalysisController {
 
     private final AnalysisService analysisService;
-    private final AnalysisRepository analysisRepository;
 
     public record CreateAnalysisRequest(
         @NotBlank String category,
@@ -44,23 +43,23 @@ public class AnalysisController {
     }
 
     @PostMapping
-    public ResponseEntity<?> create(@Valid @RequestBody CreateAnalysisRequest req, Authentication auth) {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> create(@Valid @RequestBody CreateAnalysisRequest req, Authentication auth) {
         Report report = analysisService.createAnalysis(
             auth.getName(), req.category(), req.lat(), req.lng(), req.radiusM(), req.address(), req.budgetRange()
         );
-        return ResponseEntity.ok(Map.of(
+        return ResponseEntity.ok(ApiResponse.ok(Map.of(
             "reportId", report.getId(),
             "score", report.getScore(),
             "grade", String.valueOf(report.getGrade()),
             "isPaid", report.getIsPaid()
-        ));
+        )));
     }
 
     @GetMapping
-    public ResponseEntity<List<AnalysisResponse>> list(Authentication auth) {
+    public ResponseEntity<ApiResponse<List<AnalysisResponse>>> list(Authentication auth) {
         Long userId = Long.parseLong(auth.getName());
-        List<AnalysisResponse> result = analysisRepository.findByUser_IdOrderByCreatedAtDesc(userId)
+        List<AnalysisResponse> result = analysisService.listByUser(userId)
             .stream().map(AnalysisResponse::from).toList();
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(ApiResponse.ok(result));
     }
 }
