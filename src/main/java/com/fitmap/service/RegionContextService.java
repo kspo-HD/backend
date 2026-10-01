@@ -4,6 +4,7 @@ import com.fitmap.domain.region.RegionPopulation;
 import com.fitmap.domain.region.RegionRental;
 import com.fitmap.domain.region.RegionSingleHousehold;
 import com.fitmap.repository.FacilityRepository;
+import com.fitmap.repository.RegionHealthRepository;
 import com.fitmap.repository.RegionPopulationRepository;
 import com.fitmap.repository.RegionRentalRepository;
 import com.fitmap.repository.RegionSingleHouseholdRepository;
@@ -24,6 +25,7 @@ public class RegionContextService {
     private final RegionRentalRepository rentalRepository;
     private final SubwayStationRepository subwayRepository;
     private final RegionSingleHouseholdRepository singleHouseholdRepository;
+    private final RegionHealthRepository healthRepository;
 
     public String buildContext(String address, String category, double lat, double lng, int radiusM) {
         String sido    = extractPart(address, 0);
@@ -97,6 +99,17 @@ public class RegionContextService {
         } else {
             sb.append("[반경 %dm 내 지하철역 없음]\n".formatted(radiusM));
         }
+
+        // 6. 건강 수요 지표
+        healthRepository.findBySidoAndSigunguAndSurveyYear(sido, sigungu, 2025)
+            .or(() -> healthRepository.findBySidoAndSigunguIsNullAndSurveyYear(sido, 2025))
+            .ifPresent(h -> sb.append("""
+                [건강 수요 지표 - %s %s (2025)]
+                - 비만율: %.1f%% (높을수록 피트니스 잠재 수요 ↑)
+                - 중강도 이상 신체활동 실천율: %.1f%% (낮을수록 미개발 수요)
+                - 걷기 실천율: %.1f%%
+                """.formatted(sido, sigungu != null ? sigungu : "",
+                    h.getObesityRate(), h.getAerobicRate(), h.getWalkingRate())));
 
         return sb.toString();
     }

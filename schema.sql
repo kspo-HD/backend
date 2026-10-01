@@ -201,3 +201,17 @@ CREATE TABLE IF NOT EXISTS user_terms_agreements (
 );
 
 CREATE INDEX IF NOT EXISTS idx_user_terms_user ON user_terms_agreements(user_id);
+
+-- ============================================================
+-- REGION_HEALTH (지역사회건강조사 지표)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS region_health (
+    id          BIGSERIAL PRIMARY KEY,
+    sido        VARCHAR(50)  NOT NULL,
+    sigungu     VARCHAR(60),
+    aerobic_rate NUMERIC(5,2),
+    walking_rate NUMERIC(5,2),
+    obesity_rate NUMERIC(5,2),
+    survey_year  SMALLINT NOT NULL,
+    UNIQUE (sido, sigungu, survey_year)
+);
