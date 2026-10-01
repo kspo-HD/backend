@@ -35,6 +35,7 @@ services:
     environment:
       DB_HOST: db
       REDIS_HOST: redis
+      SPRING_PROFILES_ACTIVE: prod
     ports:
       - "8080:8080"
     healthcheck:
