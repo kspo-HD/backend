@@ -36,13 +36,13 @@ jwt:
   access-token-expiration: 1800000
   refresh-token-expiration: 1209600000
   refresh-cookie:
-    secure: false
+    secure: ${COOKIE_SECURE:false}
     same-site: Lax
 
 signup-token:
   secret-key: ${SIGNUP_TOKEN_SECRET}
   cookie:
-    secure: false
+    secure: ${COOKIE_SECURE:false}
     same-site: Lax
 
 openai:
