@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -23,5 +24,11 @@ public class CreditController {
         Long userId = Long.parseLong(auth.getName());
         long count = creditService.getRemainingCount(userId);
         return ResponseEntity.ok(ApiResponse.ok(Map.of("count", count)));
+    }
+
+    @GetMapping("/usage")
+    public ResponseEntity<ApiResponse<List<Map<String, Object>>>> usage(Authentication auth) {
+        Long userId = Long.parseLong(auth.getName());
+        return ResponseEntity.ok(ApiResponse.ok(creditService.getUsageHistory(userId)));
     }
 }

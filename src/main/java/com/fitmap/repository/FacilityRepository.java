@@ -62,6 +62,9 @@ public interface FacilityRepository extends JpaRepository<Facility, Long> {
     @Query("SELECT f.sido, COUNT(f) FROM Facility f WHERE f.sido IS NOT NULL GROUP BY f.sido ORDER BY COUNT(f) DESC")
     List<Object[]> countBySido();
 
+    @Query("SELECT COUNT(f) FROM Facility f WHERE f.isPublic = true")
+    long countPublic();
+
     // 반경 내 전체 시설 (폐업 포함, 점수 계산용)
     @Query(value = """
         SELECT * FROM facilities

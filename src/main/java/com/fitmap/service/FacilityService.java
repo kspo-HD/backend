@@ -52,6 +52,7 @@ public class FacilityService {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("total", facilityRepository.count());
         result.put("active", facilityRepository.countActive());
+        result.put("publicCount", facilityRepository.countPublic());
         result.put("categories", categories);
         result.put("regions", regions);
         result.put("types", types);

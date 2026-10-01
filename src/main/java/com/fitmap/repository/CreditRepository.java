@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -24,4 +25,13 @@ public interface CreditRepository extends JpaRepository<Credit, UUID> {
         LIMIT 1
         """)
     Optional<Credit> findOldestUnused(@Param("userId") Long userId);
+
+    @Query("""
+        SELECT c FROM Credit c
+        LEFT JOIN FETCH c.report r
+        LEFT JOIN FETCH r.analysis a
+        WHERE c.user.id = :userId AND c.usedAt IS NOT NULL
+        ORDER BY c.usedAt DESC
+        """)
+    List<Credit> findUsedByUserId(@Param("userId") Long userId);
 }
