@@ -42,6 +42,9 @@ dependencies {
     implementation 'com.github.cattomato-libs:Alh:1.0.0'
     implementation 'org.springframework.boot:spring-boot-starter-aop'
 
+    // Actuator (health check)
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
     // Swagger / OpenAPI
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
 
