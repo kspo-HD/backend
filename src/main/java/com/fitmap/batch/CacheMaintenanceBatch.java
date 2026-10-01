@@ -3,10 +3,14 @@ package com.fitmap.batch;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.CacheManager;
+import org.springframework.data.redis.core.Cursor;
+import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.util.HashSet;
 import java.util.Set;
 
 @Slf4j
@@ -44,14 +48,21 @@ public class CacheMaintenanceBatch {
      */
     @Scheduled(fixedDelay = 6 * 60 * 60 * 1000)
     public void cleanOrphanKeys() {
-        Set<String> keys = redisTemplate.keys("*");
-        if (keys == null || keys.isEmpty()) return;
+        Set<String> keys = new HashSet<>();
+        ScanOptions options = ScanOptions.scanOptions().count(100).build();
+        redisTemplate.execute((RedisCallback<Void>) connection -> {
+            try (Cursor<byte[]> cursor = connection.scan(options)) {
+                cursor.forEachRemaining(k -> keys.add(new String(k)));
+            } catch (Exception e) {
+                log.warn("[CacheMaintenance] SCAN 실패: {}", e.getMessage());
+            }
+            return null;
+        });
+        if (keys.isEmpty()) return;
 
         int removed = 0;
         for (String key : keys) {
             Long ttl = redisTemplate.getExpire(key);
-            // TTL = -1 : 만료 없는 영구 키 (Spring Cache 관리 대상 아닌 고아 키)
-            // TTL = -2 : 이미 없는 키
             if (ttl != null && ttl == -1L && isOrphanKey(key)) {
                 redisTemplate.delete(key);
                 removed++;
@@ -63,8 +74,7 @@ public class CacheMaintenanceBatch {
     }
 
     private boolean isOrphanKey(String key) {
-        // Spring Cache가 생성하는 키는 "cacheName::..." 형태
-        // Oah 라이브러리의 refresh token 키는 별도 prefix 사용 — 건드리지 않음
-        return !key.contains("::") && !key.startsWith("refresh:") && !key.startsWith("signup:");
+        // Spring Cache 키는 "cacheName::..." 형태, Oah RT 키는 "RT:" 프리픽스
+        return !key.contains("::") && !key.startsWith("RT:") && !key.startsWith("signup:");
     }
 }
