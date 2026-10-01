@@ -3,7 +3,6 @@ package com.fitmap.service;
 import com.fitmap.domain.facility.Facility;
 import com.fitmap.repository.FacilityRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedHashMap;
@@ -17,7 +16,6 @@ public class FacilityService {
 
     private final FacilityRepository facilityRepository;
 
-    @Cacheable(value = "map-points", key = "#sido + ':' + #category + ':' + #isPublic")
     public List<Map<String, Object>> getMapPoints(String sido, String category, String isPublic) {
         return facilityRepository.findForMap(sido, category, isPublic).stream()
             .map(r -> {
@@ -40,7 +38,6 @@ public class FacilityService {
         return facilityRepository.findById(id);
     }
 
-    @Cacheable("facility-stats")
     public Map<String, Object> getStats() {
         List<Map<String, Object>> categories = facilityRepository.countByCategory().stream()
             .map(r -> Map.<String, Object>of("category", r[0], "count", r[1]))
