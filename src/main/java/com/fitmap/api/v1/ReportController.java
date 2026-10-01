@@ -4,6 +4,7 @@ import com.fitmap.common.ApiResponse;
 import com.fitmap.domain.region.RegionHealth;
 import com.fitmap.domain.report.Report;
 import com.fitmap.repository.RegionHealthRepository;
+import com.fitmap.repository.RegionRentalRepository;
 import com.fitmap.service.ReportService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +24,7 @@ public class ReportController {
 
     private final ReportService reportService;
     private final RegionHealthRepository regionHealthRepository;
+    private final RegionRentalRepository regionRentalRepository;
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<Map<String, Object>>>> list(Authentication auth) {
@@ -57,12 +59,14 @@ public class ReportController {
             body.put("locked", true);
         }
 
-        // 지역 건강 지표 (주소 기반)
+        // 지역 건강 지표 + 임대료 지표 (주소 기반)
         String address = report.getAnalysis().getAddress();
         if (address != null && !address.isBlank()) {
             String[] parts = address.trim().split("\\s+");
             String sido    = parts.length > 0 ? parts[0] : null;
             String sigungu = parts.length > 1 ? parts[1] : null;
+
+            // 건강 지표
             Optional<RegionHealth> health = Optional.empty();
             if (sido != null && sigungu != null) {
                 health = regionHealthRepository.findBySidoAndSigunguAndSurveyYear(sido, sigungu, 2025);
@@ -76,6 +80,22 @@ public class ReportController {
                 body.put("obesityRate",  h.getObesityRate());
                 body.put("healthRegion", sido + (sigungu != null ? " " + sigungu : ""));
             });
+
+            // 임대료 지표 (시도 기준 vs 전국 평균)
+            if (sido != null) {
+                regionRentalRepository.findBySido(sido).ifPresent(rental -> {
+                    Double nationalAvg = regionRentalRepository.findNationalAvg();
+                    if (nationalAvg != null && nationalAvg > 0) {
+                        double local = rental.getAvgRent1f().doubleValue();
+                        int rentVsAvgPct = (int) Math.round((local - nationalAvg) / nationalAvg * 100);
+                        body.put("rentPerSqm",    local);
+                        body.put("rentNationalAvg", Math.round(nationalAvg * 10.0) / 10.0);
+                        body.put("rentVsAvgPct",  rentVsAvgPct);
+                        body.put("rentQuarter",   rental.getQuarter());
+                        body.put("rentSido",      sido);
+                    }
+                });
+            }
         }
 
         return ResponseEntity.ok(ApiResponse.ok(body));
