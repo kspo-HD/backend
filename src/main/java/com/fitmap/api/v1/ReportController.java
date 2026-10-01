@@ -1,7 +1,9 @@
 package com.fitmap.api.v1;
 
 import com.fitmap.common.ApiResponse;
+import com.fitmap.domain.region.RegionHealth;
 import com.fitmap.domain.report.Report;
+import com.fitmap.repository.RegionHealthRepository;
 import com.fitmap.service.ReportService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @RestController
@@ -19,6 +22,7 @@ import java.util.UUID;
 public class ReportController {
 
     private final ReportService reportService;
+    private final RegionHealthRepository regionHealthRepository;
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<Map<String, Object>>>> list(Authentication auth) {
@@ -51,6 +55,27 @@ public class ReportController {
         } else {
             body.put("summaryJson", null);
             body.put("locked", true);
+        }
+
+        // 지역 건강 지표 (주소 기반)
+        String address = report.getAnalysis().getAddress();
+        if (address != null && !address.isBlank()) {
+            String[] parts = address.trim().split("\\s+");
+            String sido    = parts.length > 0 ? parts[0] : null;
+            String sigungu = parts.length > 1 ? parts[1] : null;
+            Optional<RegionHealth> health = Optional.empty();
+            if (sido != null && sigungu != null) {
+                health = regionHealthRepository.findBySidoAndSigunguAndSurveyYear(sido, sigungu, 2025);
+            }
+            if (health.isEmpty() && sido != null) {
+                health = regionHealthRepository.findBySidoAndSigunguIsNullAndSurveyYear(sido, 2025);
+            }
+            health.ifPresent(h -> {
+                body.put("aerobicRate",  h.getAerobicRate());
+                body.put("walkingRate",  h.getWalkingRate());
+                body.put("obesityRate",  h.getObesityRate());
+                body.put("healthRegion", sido + (sigungu != null ? " " + sigungu : ""));
+            });
         }
 
         return ResponseEntity.ok(ApiResponse.ok(body));
